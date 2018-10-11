@@ -2,26 +2,28 @@
 <html>
 <head>
   <title>Fragcenter</title>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/2.4.1/dash.all.min.js"></script>
+  <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <style>
+    video {
+       width: 30%;
+    }
+</style>
 </head>
 <body style="background-color:slategray;">
 
-    <video id="live-video" poster="<poster_image_here>" controls />
-            <script>
-            document.addEventListener("DOMContentLoaded", function (event) {
-                var video_element = document.getElementById('#live-video');
-
-                if (window.MediaSource) {
-                // For good web browsers, use dash.js
-
-                player = dashjs.MediaPlayer().create();
-                player.initialize(video_element, null, true);
-                player.setFastSwitchEnabled(true);
-
-                player.attachSource("http://127.0.0.1:8080/dash/testing1/index.mpd");
-            }
-        });
-        </script>
-
+    <div style="" align="center">
+        <video data-dashjs-player autoplay src="http://localhost:8080/dash/testing1/index.mpd" controls></video>
+        <video data-dashjs-player autoplay src="http://localhost:8080/dash/watwat/index.mpd" controls></video>
+    </div>
+    <script type="text/javascript">
+        function checkChanges(){
+          $.get("index.html", function(data){
+            if ( data != document.documentElement.innerHTML) {
+              location.reload();
+            };
+          });
+        }
+        setInterval(checkChanges, 5000);
+      </script>
 </body>
