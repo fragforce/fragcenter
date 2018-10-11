@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Fragcenter</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/2.4.1/dash.all.min.js"></script>
+</head>
+<body style="background-color:slategray;">
+
+    <video id="live-video" poster="<poster_image_here>" controls />
+            <script>
+            document.addEventListener("DOMContentLoaded", function (event) {
+                var video_element = document.getElementById('#live-video');
+
+                if (window.MediaSource) {
+                // For good web browsers, use dash.js
+
+                player = dashjs.MediaPlayer().create();
+                player.initialize(video_element, null, true);
+                player.setFastSwitchEnabled(true);
+
+                player.attachSource("http://127.0.0.1:8080/dash/testing1/index.mpd");
+            }
+        });
+        </script>
+
+</body>
