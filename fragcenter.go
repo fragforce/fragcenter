@@ -3,20 +3,20 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
 	xj "github.com/basgys/goxml2json"
 )
 
-var (
-	streamHost string
-)
+var ()
 
 //LiveStreams are the active streams on the stats page.
 type LiveStreams struct {
@@ -86,8 +86,19 @@ type LiveStreams struct {
 }
 
 func main() {
-	go webHost()
-	go statsCheck()
+
+	streamHost := flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
+	streamPort := flag.String("port", "8080", "Port the rtmp server is outputting http traffic")
+	webPort := flag.String("web", "3000", "Port the webserver runs on.")
+
+	flag.Parse()
+
+	fmt.Println("rtmp host: " + *streamHost + ":" + *streamPort)
+
+	fmt.Println("Starting web host on port " + *webPort)
+	go webHost(*webPort)
+	fmt.Println("Starting stats checker")
+	go statsCheck(*streamHost, *streamPort)
 
 	fmt.Println("Fragcenter is now running. Send 'shutdown' or 'ctrl + c' to stop Fragcenter.")
 
@@ -106,19 +117,19 @@ func main() {
 			return
 		}
 	}
-
 }
 
-func webHost() {
+func webHost(port string) {
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.ListenAndServe(":3000", nil)
+	http.ListenAndServe(":"+port, nil)
 }
 
-func statsCheck() {
+func statsCheck(host string, port string) {
 	for {
-		resp, err := http.Get("http://" + streamHost + ":8080/stats")
+		fmt.Println("Checking Stats")
+		resp, err := http.Get("http://" + host + ":" + port + "/stats")
 		if err != nil {
-			log.Fatal("", err)
+			log.Fatal("Problem getting stats page.\n", err)
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
@@ -128,6 +139,8 @@ func statsCheck() {
 			panic("That's embarrassing...")
 		}
 
+		fmt.Println(converted.String())
+
 		var active []string
 
 		streams := LiveStreams{}
@@ -135,17 +148,16 @@ func statsCheck() {
 
 		for _, application := range streams.Rtmp.Server.Application {
 			if application.Name == "stream" {
-				fmt.Println("New batch")
 				for _, live := range application.Live.Stream {
 					if live.BwIn == "0" {
+						fmt.Println("stream is stopped")
 						continue
 					}
-					fmt.Println(live.Name)
 					active = append(active, live.Name)
-					fmt.Println(live.BwIn)
+					fmt.Println(live.Name)
 				}
-				fmt.Println("")
-				writeHTML(active)
+				sort.Strings(active)
+				writeHTML(active, host, port)
 			}
 		}
 		time.Sleep(10 * time.Second)
@@ -168,48 +180,54 @@ func fileCheck() {
 	}
 }
 
-func writeHTML(streams []string) error {
+func writeHTML(streams []string, host string, port string) error {
 
-	htmlBody := ``
+	var bodyLines []string
+
+	htmlBody := ""
 
 	htmlStart := `<!DOCTYPE html>
 <html>
 <head>
-    <title>Fragcenter</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dashjs/2.4.1/dash.all.min.js"></script>
-    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
-<style>
-  	video {
-	   width: 30%;
-  	}
-</style>
+  <title>Fragcenter</title>
+  <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <style>
+	video {
+	width: 100%;
+	padding-left: 1%;
+	padding-right: 1%;
+	}
+	#container {
+	width: 30%;
+	padding-left: 1%;
+	padding-right: 1%;
+	float: left;
+	}
+  </style>
 </head>
 <body style="background-color:slategray;">
+<div align="center">
 `
 
 	htmlEnd := `
-	<script type="text/javascript">
-    function checkChanges(){
-      $.get("index.html", function(data){
-        if ( data != document.documentElement.innerHTML) {
-          location.reload();
-        };
-      });
-    }
-    setInterval(checkChanges, 5000);
-  </script>
+</div>
 </body>
 </html>`
 
-	baseVideo := `<video data-dashjs-player autoplay src="http://<stereamHost>:8080/dash/<streamname>/index.mpd" controls></video>`
+	baseVideo := `  <div id="container">
+    <video data-dashjs-player autoplay muted src="http://<stereamHost>:<streamPort>/dash/<streamName>/index.mpd"></video>
+    <br/>
+    <q><streamName></q>
+  </div>`
 
 	for count, name := range streams {
 		if count < 3 {
-			fmt.Println("There are less than 3 streams")
-			fmt.Println(strings.Replace("<video data-dashjs-player autoplay src=\"http://<stereamHost>:8080/dash/<streamName>/index.mpd\" controls></video>", "<streamName>", name, -1))
+			bodyLines = append(bodyLines, strings.Replace(strings.Replace(strings.Replace(baseVideo, "<streamName>", name, -1), "<stereamHost>", host, -1), "<streamPort>", port, -1))
 		}
-		//htmlBody = strings.Replace(BaseVideo, "<streamName>", name, -1)
 	}
+
+	htmlBody = strings.Join(bodyLines, "\n")
 
 	fo, err := os.Create("./public/index.html")
 	if err != nil {
@@ -217,9 +235,9 @@ func writeHTML(streams []string) error {
 	}
 	defer fo.Close()
 
-	writer := bufio.NewWriter(fo)
+	fo.WriteString(htmlStart + htmlBody + htmlEnd)
 
-	fmt.Fprint(writer, htmlStart+htmlBody+htmlEnd)
+	fo.Close()
 
 	return nil
 }
