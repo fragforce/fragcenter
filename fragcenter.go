@@ -139,8 +139,6 @@ func statsCheck(host string, port string) {
 			panic("That's embarrassing...")
 		}
 
-		fmt.Println(converted.String())
-
 		var active []string
 
 		streams := LiveStreams{}
@@ -186,12 +184,35 @@ func writeHTML(streams []string, host string, port string) error {
 
 	htmlBody := ""
 
-	htmlStart := `<!DOCTYPE html>
-<html>
+	htmlStart := `<html>
 <head>
   <title>Fragcenter</title>
   <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script type="text/javascript">
+    function getPage(){
+      var result;
+      $.ajax({
+        url: 'index.html',
+        type: 'get',
+        async: false,
+        success: function(data) {
+          result = data;
+        }
+      });
+      return result;
+    }
+
+    current = getPage();
+
+    function checkChanges(){
+      check = getPage();
+      if ( check != current) {
+        location.reload();
+      };
+    }
+    setInterval(checkChanges, 10000);
+  </script>
   <style>
 	video {
 	width: 100%;
