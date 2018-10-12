@@ -5,25 +5,22 @@
   <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <style>
-    video {
-       width: 30%;
-    }
-</style>
+	video {
+	width: 100%;
+	padding-left: 1%;
+	padding-right: 1%;
+	}
+	#container {
+	width: 30%;
+	padding-left: 1%;
+	padding-right: 1%;
+	float: left;
+	}
+  </style>
 </head>
 <body style="background-color:slategray;">
+<div align="center">
 
-    <div style="" align="center">
-        <video data-dashjs-player autoplay src="http://localhost:8080/dash/testing1/index.mpd" controls></video>
-        <video data-dashjs-player autoplay src="http://localhost:8080/dash/watwat/index.mpd" controls></video>
-    </div>
-    <script type="text/javascript">
-        function checkChanges(){
-          $.get("index.html", function(data){
-            if ( data != document.documentElement.innerHTML) {
-              location.reload();
-            };
-          });
-        }
-        setInterval(checkChanges, 5000);
-      </script>
+</div>
 </body>
+</html>
