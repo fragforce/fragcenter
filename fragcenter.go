@@ -14,8 +14,6 @@ import (
 	"time"
 )
 
-var ()
-
 type LiveStreams struct {
 	Applications []struct {
 		Name string `xml:"name"`
