@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -12,77 +12,20 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	xj "github.com/basgys/goxml2json"
 )
 
 var ()
 
-//LiveStreams are the active streams on the stats page.
 type LiveStreams struct {
-	Rtmp struct {
-		NginxVersion     string `json:"nginx_version"`
-		NginxRtmpVersion string `json:"nginx_rtmp_version"`
-		Naccepted        string `json:"naccepted"`
-		BytesIn          string `json:"bytes_in"`
-		BwOut            string `json:"bw_out"`
-		BytesOut         string `json:"bytes_out"`
-		Compiler         string `json:"compiler"`
-		Built            string `json:"built"`
-		Pid              string `json:"pid"`
-		Uptime           string `json:"uptime"`
-		BwIn             string `json:"bw_in"`
-		Server           struct {
-			Application []struct {
-				Name string `json:"name"`
-				Live struct {
-					Stream []struct {
-						Time    string `json:"time"`
-						BwIn    string `json:"bw_in"`
-						BwOut   string `json:"bw_out"`
-						BwVideo string `json:"bw_video"`
-						Client  []struct {
-							Flashver   string `json:"flashver"`
-							Dropped    string `json:"dropped"`
-							Avsync     string `json:"avsync"`
-							Timestamp  string `json:"timestamp"`
-							Active     string `json:"active"`
-							ID         string `json:"id"`
-							Address    string `json:"address"`
-							Time       string `json:"time"`
-							Swfurl     string `json:"swfurl,omitempty"`
-							Publishing string `json:"publishing,omitempty"`
-						} `json:"client"`
-						Meta struct {
-							Video struct {
-								Height    string `json:"height"`
-								FrameRate string `json:"frame_rate"`
-								Codec     string `json:"codec"`
-								Profile   string `json:"profile"`
-								Compat    string `json:"compat"`
-								Level     string `json:"level"`
-								Width     string `json:"width"`
-							} `json:"video"`
-							Audio struct {
-								Channels   string `json:"channels"`
-								SampleRate string `json:"sample_rate"`
-								Codec      string `json:"codec"`
-								Profile    string `json:"profile"`
-							} `json:"audio"`
-						} `json:"meta"`
-						Nclients   string `json:"nclients"`
-						Publishing string `json:"publishing"`
-						Name       string `json:"name"`
-						BytesIn    string `json:"bytes_in"`
-						BytesOut   string `json:"bytes_out"`
-						BwAudio    string `json:"bw_audio"`
-						Active     string `json:"active"`
-					} `json:"stream"`
-					Nclients string `json:"nclients"`
-				} `json:"live"`
-			} `json:"application"`
-		} `json:"server"`
-	} `json:"rtmp"`
+	Applications []struct {
+		Name string `xml:"name"`
+		Live []struct {
+			Stream struct {
+				Name string `xml:"name"`
+				BWIn int    `xml:"bw_in"`
+			} `xml:"stream"`
+		} `xml:"live"`
+	} `xml:"server>application"`
 }
 
 func main() {
@@ -124,6 +67,16 @@ func webHost(port string) {
 	http.ListenAndServe(":"+port, nil)
 }
 
+func marshalLiveStream(body []byte) (*LiveStreams, error) {
+	var streams LiveStreams
+	err := xml.Unmarshal(body, &streams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &streams, nil
+}
+
 func statsCheck(host string, port string) {
 	for {
 		fmt.Println("Checking Stats")
@@ -133,31 +86,33 @@ func statsCheck(host string, port string) {
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
-
-		converted, err := xj.Convert(strings.NewReader(string(body)))
 		if err != nil {
-			panic("That's embarrassing...")
+			panic("Couldn't read the response body.")
+		}
+
+		liveStreams, err := marshalLiveStream(body)
+		if err != nil {
+			panic("Couldn't marshal the XML body to a struct.")
 		}
 
 		var active []string
 
-		streams := LiveStreams{}
-		json.Unmarshal(converted.Bytes(), &streams)
-
-		for _, application := range streams.Rtmp.Server.Application {
+		for _, application := range liveStreams.Applications {
 			if application.Name == "stream" {
-				for _, live := range application.Live.Stream {
-					if live.BwIn == "0" {
+				for _, live := range application.Live {
+					if live.Stream.BWIn == 0 {
 						fmt.Println("stream is stopped")
 						continue
 					}
-					active = append(active, live.Name)
-					fmt.Println(live.Name)
+					active = append(active, live.Stream.Name)
+					fmt.Println(live.Stream.Name)
 				}
-				sort.Strings(active)
-				writeHTML(active, host, port)
 			}
 		}
+
+		sort.Strings(active)
+		writeHTML(active, host, port)
+
 		time.Sleep(10 * time.Second)
 	}
 }
