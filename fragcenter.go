@@ -35,11 +35,12 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Println("rtmp host: " + *streamHost + ":" + *streamPort)
+	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", *streamHost, *streamPort)
 
-	fmt.Println("Starting web host on port " + *webPort)
+	fmt.Printf("Starting web host on port %s.\n", *webPort)
 	go webHost(*webPort)
-	fmt.Printf("Starting stats checker, polling every %d seconds\n", *pollInterval)
+
+	fmt.Printf("Starting stats checker, polling every %d seconds.\n", *pollInterval)
 	go statsCheck(*streamHost, *streamPort, *pollInterval)
 
 	fmt.Println("Fragcenter is now running. Send 'shutdown' or 'ctrl + c' to stop Fragcenter.")
@@ -77,9 +78,10 @@ func marshalLiveStream(body []byte) (*LiveStreams, error) {
 }
 
 func statsCheck(host, port string, pollInterval int) {
+	url := fmt.Sprintf("http://%s:%s/stats", host, port)
 	for {
-		fmt.Println("Checking Stats")
-		resp, err := http.Get("http://" + host + ":" + port + "/stats")
+		fmt.Println("Checking Stats...")
+		resp, err := http.Get(url)
 		if err != nil {
 			log.Fatal("Problem getting stats page.\n", err)
 		}
@@ -100,11 +102,11 @@ func statsCheck(host, port string, pollInterval int) {
 			if application.Name == "stream" {
 				for _, live := range application.Live {
 					if live.Stream.BWIn == 0 {
-						fmt.Println("stream is stopped")
+						fmt.Printf("Stream '%s' is stopped. Ignoring.\n", live.Stream.Name)
 						continue
 					}
 					active = append(active, live.Stream.Name)
-					fmt.Println(live.Stream.Name)
+					fmt.Printf("Found live stream '%s'.\n", live.Stream.Name)
 				}
 			}
 		}
