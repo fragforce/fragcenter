@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -37,34 +36,12 @@ func main() {
 
 	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", *streamHost, *streamPort)
 
-	fmt.Printf("Starting web host on port %s.\n", *webPort)
-	go webHost(*webPort)
-
 	fmt.Printf("Starting stats checker, polling every %d seconds.\n", *pollInterval)
 	go statsCheck(*streamHost, *streamPort, *pollInterval)
 
-	fmt.Println("Fragcenter is now running. Send 'shutdown' or 'ctrl + c' to stop Fragcenter.")
-
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("cannot read from stdin")
-		}
-		line = strings.TrimSpace(line)
-		if len(line) == 0 {
-			continue
-		}
-		if line == "shutdown" {
-			fmt.Println("Shutting down fragcenter.")
-			return
-		}
-	}
-}
-
-func webHost(port string) {
+	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", *webPort)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(fmt.Sprintf(":%s", *webPort), nil)
 }
 
 func marshalLiveStream(body []byte) (*LiveStreams, error) {
