@@ -31,6 +31,7 @@ func main() {
 	streamHost := flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
 	streamPort := flag.String("port", "8080", "Port the rtmp server is outputting http traffic")
 	webPort := flag.String("web", "3000", "Port the webserver runs on.")
+	pollInterval := flag.Int("poll", 10, "Polling interval")
 
 	flag.Parse()
 
@@ -38,8 +39,8 @@ func main() {
 
 	fmt.Println("Starting web host on port " + *webPort)
 	go webHost(*webPort)
-	fmt.Println("Starting stats checker")
-	go statsCheck(*streamHost, *streamPort)
+	fmt.Printf("Starting stats checker, polling every %d seconds\n", *pollInterval)
+	go statsCheck(*streamHost, *streamPort, *pollInterval)
 
 	fmt.Println("Fragcenter is now running. Send 'shutdown' or 'ctrl + c' to stop Fragcenter.")
 
@@ -75,7 +76,7 @@ func marshalLiveStream(body []byte) (*LiveStreams, error) {
 	return &streams, nil
 }
 
-func statsCheck(host string, port string) {
+func statsCheck(host, port string, pollInterval int) {
 	for {
 		fmt.Println("Checking Stats")
 		resp, err := http.Get("http://" + host + ":" + port + "/stats")
@@ -111,7 +112,7 @@ func statsCheck(host string, port string) {
 		sort.Strings(active)
 		writeHTML(active, host, port)
 
-		time.Sleep(10 * time.Second)
+		time.Sleep(time.Duration(pollInterval) * time.Second)
 	}
 }
 
