@@ -24,7 +24,10 @@ There are flags that can be set on startup.
 This Also means the nginx.conf in the repo is copied to `/srv/rtmp/nginx.conf`. Please move it whereever you want and adjust the docker command accordingly.
 
 ### Docker command to run the rtmp server we built this for
-This will default to port 1935 (default rtmp port) and port 8080 (default for stats pages)  
+The dockerfile we are running is located here. https://github.com/alfg/docker-nginx-rtmp
+
+
+This command will default to port 1935 (default rtmp port) and port 8080 (default for stats pages)  
 `docker run -it -d --rm -p 1935:1935 -p 8080:80 -v /srv/rtmp/nginx.conf:/opt/nginx/nginx.conf alfg/nginx-rtmp`
 
 ### Examples:  
