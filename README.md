@@ -24,14 +24,15 @@ There are flags that can be set on startup.
 This Also means the nginx.conf in the repo is copied to `/srv/rtmp/nginx.conf`. Please move it whereever you want and adjust the docker command accordingly.
 
 ### Docker command to run the rtmp server we built this for
+This will default to port 1935 (default rtmp port) and port 8080 (default for stats pages)  
 `docker run -it -d --rm -p 1935:1935 -p 8080:80 -v /srv/rtmp/nginx.conf:/opt/nginx/nginx.conf alfg/nginx-rtmp`
 
 ### Examples:  
-Single host for rtmp server/fragcenter/web browser using the previous docker command   
+1 host: Single host for rtmp server/fragcenter/web browser using the previous docker command   
     `fragcenter`
 
-If the host you are running the rtmp server is the one you are also running fragcenter but the web browser is on a different computer.  
+1 host: rtmp server/fragcenter custom web port  
     `fragcenter -host=<external_ip_of_host> -web=<port_to_host_web_pages_on>`
 
-If the host you are running the rtmp server is the one you are also running fragcenter but the web browser is on a different computer.  
-    `fragcenter -host=<external_ip_of_host> -web=<port_to_host_web_pages_on>`
+2 host: rtmp server customer stats port, fragcenter server custom web port  
+    `fragcenter -host=<external_ip_of_host> -port=<stats_page_port> -web=<port_to_host_web_pages_on>`
