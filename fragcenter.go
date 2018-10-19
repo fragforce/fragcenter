@@ -17,8 +17,8 @@ import (
 type LiveStreams struct {
 	Applications []struct {
 		Name string `xml:"name"`
-		Live []struct {
-			Stream struct {
+		Live struct {
+			Streams []struct {
 				Name string `xml:"name"`
 				BWIn int    `xml:"bw_in"`
 			} `xml:"stream"`
@@ -76,14 +76,14 @@ func statsCheck(host, port string, pollInterval int) {
 		var active []string
 
 		for _, application := range liveStreams.Applications {
-			if application.Name == "stream" {
-				for _, live := range application.Live {
-					if live.Stream.BWIn == 0 {
-						fmt.Printf("Stream '%s' is stopped. Ignoring.\n", live.Stream.Name)
+			if application.Name == "live" {
+				for _, stream := range application.Live.Streams {
+					if stream.BWIn == 0 {
+						fmt.Printf("Stream '%s' is stopped. Ignoring.\n", stream.Name)
 						continue
 					}
-					active = append(active, live.Stream.Name)
-					fmt.Printf("Found live stream '%s'.\n", live.Stream.Name)
+					active = append(active, stream.Name)
+					fmt.Printf("Found live stream '%s'.\n", stream.Name)
 				}
 			}
 		}
