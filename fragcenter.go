@@ -145,7 +145,7 @@ func statsCheck(host string, port string) {
 		json.Unmarshal(converted.Bytes(), &streams)
 
 		for _, application := range streams.Rtmp.Server.Application {
-			if application.Name == "stream" {
+			if application.Name == "live" {
 				for _, live := range application.Live.Stream {
 					if live.BwIn == "0" {
 						fmt.Println("stream is stopped")
@@ -242,10 +242,8 @@ func writeHTML(streams []string, host string, port string) error {
     <q><streamName></q>
   </div>`
 
-	for count, name := range streams {
-		if count < 3 {
-			bodyLines = append(bodyLines, strings.Replace(strings.Replace(strings.Replace(baseVideo, "<streamName>", name, -1), "<stereamHost>", host, -1), "<streamPort>", port, -1))
-		}
+	for _, name := range streams {
+		bodyLines = append(bodyLines, strings.Replace(strings.Replace(strings.Replace(baseVideo, "<streamName>", name, -1), "<stereamHost>", host, -1), "<streamPort>", port, -1))
 	}
 
 	htmlBody = strings.Join(bodyLines, "\n")
