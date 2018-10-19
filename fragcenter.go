@@ -1,8 +1,7 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -12,77 +11,18 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	xj "github.com/basgys/goxml2json"
 )
 
-var ()
-
-//LiveStreams are the active streams on the stats page.
 type LiveStreams struct {
-	Rtmp struct {
-		NginxVersion     string `json:"nginx_version"`
-		NginxRtmpVersion string `json:"nginx_rtmp_version"`
-		Naccepted        string `json:"naccepted"`
-		BytesIn          string `json:"bytes_in"`
-		BwOut            string `json:"bw_out"`
-		BytesOut         string `json:"bytes_out"`
-		Compiler         string `json:"compiler"`
-		Built            string `json:"built"`
-		Pid              string `json:"pid"`
-		Uptime           string `json:"uptime"`
-		BwIn             string `json:"bw_in"`
-		Server           struct {
-			Application []struct {
-				Name string `json:"name"`
-				Live struct {
-					Stream []struct {
-						Time    string `json:"time"`
-						BwIn    string `json:"bw_in"`
-						BwOut   string `json:"bw_out"`
-						BwVideo string `json:"bw_video"`
-						Client  []struct {
-							Flashver   string `json:"flashver"`
-							Dropped    string `json:"dropped"`
-							Avsync     string `json:"avsync"`
-							Timestamp  string `json:"timestamp"`
-							Active     string `json:"active"`
-							ID         string `json:"id"`
-							Address    string `json:"address"`
-							Time       string `json:"time"`
-							Swfurl     string `json:"swfurl,omitempty"`
-							Publishing string `json:"publishing,omitempty"`
-						} `json:"client"`
-						Meta struct {
-							Video struct {
-								Height    string `json:"height"`
-								FrameRate string `json:"frame_rate"`
-								Codec     string `json:"codec"`
-								Profile   string `json:"profile"`
-								Compat    string `json:"compat"`
-								Level     string `json:"level"`
-								Width     string `json:"width"`
-							} `json:"video"`
-							Audio struct {
-								Channels   string `json:"channels"`
-								SampleRate string `json:"sample_rate"`
-								Codec      string `json:"codec"`
-								Profile    string `json:"profile"`
-							} `json:"audio"`
-						} `json:"meta"`
-						Nclients   string `json:"nclients"`
-						Publishing string `json:"publishing"`
-						Name       string `json:"name"`
-						BytesIn    string `json:"bytes_in"`
-						BytesOut   string `json:"bytes_out"`
-						BwAudio    string `json:"bw_audio"`
-						Active     string `json:"active"`
-					} `json:"stream"`
-					Nclients string `json:"nclients"`
-				} `json:"live"`
-			} `json:"application"`
-		} `json:"server"`
-	} `json:"rtmp"`
+	Applications []struct {
+		Name string `xml:"name"`
+		Live []struct {
+			Stream struct {
+				Name string `xml:"name"`
+				BWIn int    `xml:"bw_in"`
+			} `xml:"stream"`
+		} `xml:"live"`
+	} `xml:"server>application"`
 }
 
 func main() {
@@ -90,53 +30,47 @@ func main() {
 	streamHost := flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
 	streamPort := flag.String("port", "8080", "Port the rtmp server is outputting http traffic")
 	webPort := flag.String("web", "3000", "Port the webserver runs on.")
+	pollInterval := flag.Int("poll", 10, "Polling interval")
 
 	flag.Parse()
 
-	fmt.Println("rtmp host: " + *streamHost + ":" + *streamPort)
+	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", *streamHost, *streamPort)
 
-	fmt.Println("Starting web host on port " + *webPort)
-	go webHost(*webPort)
-	fmt.Println("Starting stats checker")
-	go statsCheck(*streamHost, *streamPort)
+	fmt.Printf("Starting stats checker, polling every %d seconds.\n", *pollInterval)
+	go statsCheck(*streamHost, *streamPort, *pollInterval)
 
-	fmt.Println("Fragcenter is now running. Send 'shutdown' or 'ctrl + c' to stop Fragcenter.")
-
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("cannot read from stdin")
-		}
-		line = strings.TrimSpace(line)
-		if len(line) == 0 {
-			continue
-		}
-		if line == "shutdown" {
-			fmt.Println("Shutting down fragcenter.")
-			return
-		}
-	}
-}
-
-func webHost(port string) {
+	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", *webPort)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(fmt.Sprintf(":%s", *webPort), nil)
 }
 
-func statsCheck(host string, port string) {
+func marshalLiveStream(body []byte) (*LiveStreams, error) {
+	var streams LiveStreams
+	err := xml.Unmarshal(body, &streams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &streams, nil
+}
+
+func statsCheck(host, port string, pollInterval int) {
+	url := fmt.Sprintf("http://%s:%s/stats", host, port)
 	for {
-		fmt.Println("Checking Stats")
-		resp, err := http.Get("http://" + host + ":" + port + "/stats")
+		fmt.Println("Checking Stats...")
+		resp, err := http.Get(url)
 		if err != nil {
 			log.Fatal("Problem getting stats page.\n", err)
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
-
-		converted, err := xj.Convert(strings.NewReader(string(body)))
 		if err != nil {
-			panic("That's embarrassing...")
+			panic("Couldn't read the response body.")
+		}
+
+		liveStreams, err := marshalLiveStream(body)
+		if err != nil {
+			panic("Couldn't marshal the XML body to a struct.")
 		}
 
 		var active []string
@@ -151,14 +85,16 @@ func statsCheck(host string, port string) {
 						fmt.Println("stream is stopped")
 						continue
 					}
-					active = append(active, live.Name)
-					fmt.Println(live.Name)
+					active = append(active, live.Stream.Name)
+					fmt.Printf("Found live stream '%s'.\n", live.Stream.Name)
 				}
-				sort.Strings(active)
-				writeHTML(active, host, port)
 			}
 		}
-		time.Sleep(10 * time.Second)
+
+		sort.Strings(active)
+		writeHTML(active, host, port)
+
+		time.Sleep(time.Duration(pollInterval) * time.Second)
 	}
 }
 
