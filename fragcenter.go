@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+//LiveStreams is the datastructure of the stats xml page
 type LiveStreams struct {
 	Applications []struct {
 		Name string `xml:"name"`
@@ -26,7 +27,6 @@ type LiveStreams struct {
 }
 
 func main() {
-
 	streamHost := flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
 	streamPort := flag.String("port", "8080", "Port the rtmp server is outputting http traffic")
 	webPort := flag.String("web", "3000", "Port the webserver runs on.")
