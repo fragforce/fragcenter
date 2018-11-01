@@ -3,6 +3,12 @@ Stream display system to view active streams on an rtmp server.
 
 Running fragcenter
 
+## docker-compose
+
+Manually edit the docker compose script to use the ip/hostname or the host where indicated.
+
+If you want to record you only need to uncomment the commented section in the nginx.conf
+
 ### Get fragcenter locally
 
 You can get fragcenter by running `go get github.com/fragforce/fragcenter`
