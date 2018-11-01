@@ -170,7 +170,7 @@ func writeHTML(streams []string, host string, port string) error {
 </html>`
 
 	baseVideo := `  <div id="container">
-    <video data-dashjs-player autoplay muted src="http://<stereamHost>:<streamPort>/dash/<streamName>/index.mpd"></video>
+    <a href="rtmp://<stereamHost>:<streamPort>/dash/<streamName>"><video data-dashjs-player autoplay muted src="http://<stereamHost>:<streamPort>/dash/<streamName>/index.mpd"></video></a>
     <br/>
     <q><streamName></q>
   </div>`
