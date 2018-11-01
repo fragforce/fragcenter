@@ -6,7 +6,8 @@ RUN go build
 
 # final stage
 FROM alpine:latest
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash \
+ && mkdir -p /app/public
 WORKDIR /app
 COPY --from=build-env /go/src/fragcenter/fragcenter /app/
 CMD ["/app/fragcenter"]

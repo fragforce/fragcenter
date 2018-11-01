@@ -35,6 +35,7 @@ type LiveStreams struct {
 }
 
 func main() {
+	time.Sleep(2 * time.Second)
 	host, b := os.LookupEnv("STREAMHOST")
 	if b {
 		streamHost = host
