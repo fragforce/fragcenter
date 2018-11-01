@@ -1,0 +1,9 @@
+version: '3'
+services:
+  rtmp-server:
+    
+  fragcenter:
+    build: .
+    image: fragforce/fragcenter:latest
+    ports:
+      - 3000:3000

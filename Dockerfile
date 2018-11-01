@@ -1,5 +1,5 @@
 # build stage
-FROM golang:1.10-alpine
+FROM golang:1.10-alpine AS build-env
 COPY . ./src/fragcenter
 WORKDIR /go/src/fragcenter
 RUN go build

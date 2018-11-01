@@ -9,8 +9,16 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+)
+
+var (
+	streamHost   string
+	streamPort   string
+	webPort      string
+	pollInterval int
 )
 
 //LiveStreams is the datastructure of the stats xml page
@@ -27,21 +35,48 @@ type LiveStreams struct {
 }
 
 func main() {
-	streamHost := flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
-	streamPort := flag.String("port", "8080", "Port the rtmp server is outputting http traffic")
-	webPort := flag.String("web", "3000", "Port the webserver runs on.")
-	pollInterval := flag.Int("poll", 10, "Polling interval")
+	host, b := os.LookupEnv("STREAMHOST")
+	if b {
+		streamHost = host
+	} else {
+		streamHost = *flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
+	}
+
+	port, b := os.LookupEnv("STREAMPORT")
+	if b {
+		streamPort = port
+	} else {
+		streamPort = *flag.String("port", "8080", "Port the rtmp server is outputting http traffic")
+	}
+
+	web, b := os.LookupEnv("WEBPORT")
+	if b {
+		webPort = web
+	} else {
+		webPort = *flag.String("web", "3000", "Port the webserver runs on.")
+	}
+
+	poll, b := os.LookupEnv("POLL")
+	if b {
+		pollInt, err := strconv.Atoi(poll)
+		if err != nil {
+			fmt.Println("poll interval is not an integer")
+		}
+		pollInterval = pollInt
+	} else {
+		pollInterval = *flag.Int("poll", 10, "Polling interval")
+	}
 
 	flag.Parse()
 
-	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", *streamHost, *streamPort)
+	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", streamHost, streamPort)
 
-	fmt.Printf("Starting stats checker, polling every %d seconds.\n", *pollInterval)
-	go statsCheck(*streamHost, *streamPort, *pollInterval)
+	fmt.Printf("Starting stats checker, polling every %d seconds.\n", pollInterval)
+	go statsCheck(streamHost, streamPort, pollInterval)
 
-	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", *webPort)
+	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", webPort)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.ListenAndServe(fmt.Sprintf(":%s", *webPort), nil)
+	http.ListenAndServe(fmt.Sprintf(":%s", webPort), nil)
 }
 
 func marshalLiveStream(body []byte) (*LiveStreams, error) {
@@ -76,7 +111,7 @@ func statsCheck(host, port string, pollInterval int) {
 		var active []string
 
 		for _, application := range liveStreams.Applications {
-			if application.Name == "live" {
+			if application.Name == "stream" {
 				for _, stream := range application.Live.Streams {
 					if stream.BWIn == 0 {
 						fmt.Printf("Stream '%s' is stopped. Ignoring.\n", stream.Name)
@@ -170,14 +205,14 @@ func writeHTML(streams []string, host string, port string) error {
 </html>`
 
 	baseVideo := `  <div id="container">
-    <video data-dashjs-player autoplay muted src="http://<stereamHost>:<streamPort>/dash/<streamName>/index.mpd"></video>
+    <video data-dashjs-player autoplay muted src="http://<streamHost>:<streamPort>/dash/<streamName>/index.mpd"></video>
     <br/>
     <q><streamName></q>
   </div>`
 
 	for count, name := range streams {
 		if count < 3 {
-			bodyLines = append(bodyLines, strings.Replace(strings.Replace(strings.Replace(baseVideo, "<streamName>", name, -1), "<stereamHost>", host, -1), "<streamPort>", port, -1))
+			bodyLines = append(bodyLines, strings.Replace(strings.Replace(strings.Replace(baseVideo, "<streamName>", name, -1), "<streamHost>", host, -1), "<streamPort>", port, -1))
 		}
 	}
 
