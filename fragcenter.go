@@ -40,21 +40,21 @@ func main() {
 	if b {
 		streamHost = host
 	} else {
-		streamHost = *flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
+		flag.StringVar(&streamHost,"host", "127.0.0.1", "Host that the rtmp server is running on.")
 	}
 
 	port, b := os.LookupEnv("STREAMPORT")
 	if b {
 		streamPort = port
 	} else {
-		streamPort = *flag.String("port", "8080", "Port the rtmp server is outputting http traffic")
+		flag.StringVar(&streamPort,"port", "8080", "Port the rtmp server is outputting http traffic")
 	}
 
 	web, b := os.LookupEnv("WEBPORT")
 	if b {
 		webPort = web
 	} else {
-		webPort = *flag.String("web", "3000", "Port the webserver runs on.")
+		flag.StringVar(&webPort,"web", "3000", "Port the webserver runs on.")
 	}
 
 	poll, b := os.LookupEnv("POLL")
@@ -65,7 +65,7 @@ func main() {
 		}
 		pollInterval = pollInt
 	} else {
-		pollInterval = *flag.Int("poll", 10, "Polling interval")
+		flag.IntVar(&pollInterval,"poll", 10, "Polling interval")
 	}
 
 	flag.Parse()
