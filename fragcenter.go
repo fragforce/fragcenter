@@ -15,10 +15,11 @@ import (
 )
 
 var (
-	streamHost   string
-	streamPort   string
-	webPort      string
-	pollInterval int
+	streamHost    string
+	intStreamHost string
+	streamPort    string
+	webPort       string
+	pollInterval  int
 )
 
 //LiveStreams is the datastructure of the stats xml page
@@ -41,6 +42,13 @@ func main() {
 		streamHost = host
 	} else {
 		streamHost = *flag.String("host", "127.0.0.1", "Host that the rtmp server is running on.")
+	}
+
+	intHost, b := os.LookupEnv("INTSTREAMHOST")
+	if b {
+		intStreamHost = intHost
+	} else {
+		intStreamHost = *flag.String("intHost", "127.0.0.1", "Host that the rtmp server is running on.")
 	}
 
 	port, b := os.LookupEnv("STREAMPORT")
@@ -73,7 +81,7 @@ func main() {
 	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", streamHost, streamPort)
 
 	fmt.Printf("Starting stats checker, polling every %d seconds.\n", pollInterval)
-	go statsCheck(streamHost, streamPort, pollInterval)
+	go statsCheck(streamHost, intStreamHost, streamPort, pollInterval)
 
 	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", webPort)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
@@ -90,8 +98,8 @@ func marshalLiveStream(body []byte) (*LiveStreams, error) {
 	return &streams, nil
 }
 
-func statsCheck(host, port string, pollInterval int) {
-	url := fmt.Sprintf("http://%s:%s/stats", host, port)
+func statsCheck(host, intHost, port string, pollInterval int) {
+	url := fmt.Sprintf("http://%s:%s/stats", intHost, port)
 	for {
 		fmt.Println("Checking Stats...")
 		resp, err := http.Get(url)
