@@ -15,6 +15,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - "STREAMHOST=YOUR_IP/HOSTNAME_HERE" ## Please set to the external server IP (default is 127.0.0.1)
+      - "STREAMHOST=127.0.0.1" ## Please set to the external server IP (default is 127.0.0.1)
+      - "INTSTREAMHOST=rtmp-server" ## Please set to the internal (container) server IP (default is rtmp-server)
       - "STREAMPORT=8080" ## Port that the rtmp server uses to output stats nginx on (default is 8080)
       - "WEBPORT=3000" ## The port that fragcenter uses to hsot the site. (default is 3000)
