@@ -48,7 +48,7 @@ func main() {
 	if b {
 		intStreamHost = intHost
 	} else {
-		intStreamHost = *flag.String("intHost", "127.0.0.1", "Host that the rtmp server is running on.")
+		flag.StringVar(&intStreamHost,"intHost", "127.0.0.1", "Internal container that the rtmp server is running on.")
 	}
 
 	port, b := os.LookupEnv("STREAMPORT")
