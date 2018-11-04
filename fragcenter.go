@@ -15,11 +15,9 @@ import (
 )
 
 var (
-	streamHost    string
-	intStreamHost string
-	streamPort    string
-	webPort       string
-	pollInterval  int
+	streamPort   string
+	webPort      string
+	pollInterval int
 )
 
 //LiveStreams is the datastructure of the stats xml page
@@ -35,57 +33,42 @@ type LiveStreams struct {
 	} `xml:"server>application"`
 }
 
+// use environment variables to set the default values of flags
+func envOrFlagStr(envName, flagName, flagDefault, usage string) *string {
+	if value, exists := os.LookupEnv(envName); exists {
+		fmt.Println("Using env var.")
+		return flag.String(flagName, value, usage)
+	} else {
+		fmt.Println("Using flag.")
+		return flag.String(flagName, flagDefault, usage)
+	}
+}
+
 func main() {
-	time.Sleep(2 * time.Second)
-	host, b := os.LookupEnv("STREAMHOST")
-	if b {
-		streamHost = host
-	} else {
-		flag.StringVar(&streamHost,"host", "127.0.0.1", "Host that the rtmp server is running on.")
-	}
-
-	intHost, b := os.LookupEnv("INTSTREAMHOST")
-	if b {
-		intStreamHost = intHost
-	} else {
-		flag.StringVar(&intStreamHost,"intHost", "127.0.0.1", "Internal container that the rtmp server is running on.")
-	}
-
-	port, b := os.LookupEnv("STREAMPORT")
-	if b {
-		streamPort = port
-	} else {
-		flag.StringVar(&streamPort,"port", "8080", "Port the rtmp server is outputting http traffic")
-	}
-
-	web, b := os.LookupEnv("WEBPORT")
-	if b {
-		webPort = web
-	} else {
-		flag.StringVar(&webPort,"web", "3000", "Port the webserver runs on.")
-	}
-
-	poll, b := os.LookupEnv("POLL")
-	if b {
-		pollInt, err := strconv.Atoi(poll)
-		if err != nil {
-			fmt.Println("poll interval is not an integer")
-		}
-		pollInterval = pollInt
-	} else {
-		flag.IntVar(&pollInterval,"poll", 10, "Polling interval")
-	}
-
+	streamHost := envOrFlagStr("STREAMHOST", "host", "127.0.0.1", "Host that the rtmp server is running on.")
+	intStreamHost := envOrFlagStr("INTSTREAMHOST", "intHost", "127.0.0.1", "Internal container that the rtmp server is running on.")
+	streamPort := envOrFlagStr("STREAMPORT", "port", "8080", "Port the rtmp server is outputting http traffic")
+	webPort := envOrFlagStr("WEBPORT", "web", "3000", "Port the webserver runs on.")
+	pollIntervalStr := envOrFlagStr("POLL", "poll", "10", "Polling interval")
 	flag.Parse()
 
-	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", streamHost, streamPort)
+	pollInterval, err := strconv.Atoi(*pollIntervalStr)
+	if err != nil {
+		fmt.Println("Poll interval is not an integer. Using the default.")
+		pollInterval = 10
+	}
+
+	// Wait for the RTMP server to come up
+	time.Sleep(2 * time.Second)
+
+	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", *streamHost, *streamPort)
 
 	fmt.Printf("Starting stats checker, polling every %d seconds.\n", pollInterval)
-	go statsCheck(streamHost, intStreamHost, streamPort, pollInterval)
+	go statsCheck(*streamHost, *intStreamHost, *streamPort, pollInterval)
 
-	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", webPort)
+	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", *webPort)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
-	http.ListenAndServe(fmt.Sprintf(":%s", webPort), nil)
+	http.ListenAndServe(fmt.Sprintf(":%s", *webPort), nil)
 }
 
 func marshalLiveStream(body []byte) (*LiveStreams, error) {
