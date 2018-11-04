@@ -14,12 +14,6 @@ import (
 	"time"
 )
 
-var (
-	streamPort   string
-	webPort      string
-	pollInterval int
-)
-
 //LiveStreams is the datastructure of the stats xml page
 type LiveStreams struct {
 	Applications []struct {
@@ -36,10 +30,8 @@ type LiveStreams struct {
 // use environment variables to set the default values of flags
 func envOrFlagStr(envName, flagName, flagDefault, usage string) *string {
 	if value, exists := os.LookupEnv(envName); exists {
-		fmt.Println("Using env var.")
 		return flag.String(flagName, value, usage)
 	} else {
-		fmt.Println("Using flag.")
 		return flag.String(flagName, flagDefault, usage)
 	}
 }
@@ -50,6 +42,7 @@ func main() {
 	streamPort := envOrFlagStr("STREAMPORT", "port", "8080", "Port the rtmp server is outputting http traffic")
 	webPort := envOrFlagStr("WEBPORT", "web", "3000", "Port the webserver runs on.")
 	pollIntervalStr := envOrFlagStr("POLL", "poll", "10", "Polling interval")
+	appName := envOrFlagStr("APPNAME", "appname", "live", "Stream application name")
 	flag.Parse()
 
 	pollInterval, err := strconv.Atoi(*pollIntervalStr)
@@ -63,8 +56,8 @@ func main() {
 
 	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", *streamHost, *streamPort)
 
-	fmt.Printf("Starting stats checker, polling every %d seconds.\n", pollInterval)
-	go statsCheck(*streamHost, *intStreamHost, *streamPort, pollInterval)
+	fmt.Printf("Starting stats checker, polling every %d seconds for streams named '%s'.\n", pollInterval, *appName)
+	go statsCheck(*streamHost, *intStreamHost, *streamPort, pollInterval, *appName)
 
 	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", *webPort)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
@@ -81,7 +74,7 @@ func marshalLiveStream(body []byte) (*LiveStreams, error) {
 	return &streams, nil
 }
 
-func statsCheck(host, intHost, port string, pollInterval int) {
+func statsCheck(host, intHost, port string, pollInterval int, appName string) {
 	url := fmt.Sprintf("http://%s:%s/stats", intHost, port)
 	for {
 		fmt.Println("Checking Stats...")
@@ -103,7 +96,7 @@ func statsCheck(host, intHost, port string, pollInterval int) {
 		var active []string
 
 		for _, application := range liveStreams.Applications {
-			if application.Name == "stream" {
+			if application.Name == appName {
 				for _, stream := range application.Live.Streams {
 					if stream.BWIn == 0 {
 						fmt.Printf("Stream '%s' is stopped. Ignoring.\n", stream.Name)
