@@ -21,11 +21,21 @@ There are flags that can be set on startup.
 `-host`  
     Set the host that is running the rtmp server (default is 127.0.0.1)  
 
+`-intHost`  
+    Set the host that fragcenter checks for stats (default is 127.0.0.1).
+    Really only exists for the docker container
+
 `-port`  
     Set the port the rtmp server is serving on. (default is 8080)
 
 `-web`  
     Set the port fragcenter uses to host it's own web server (default is 3000)  
+
+`-poll`  
+    How often fragcenter is to check the stream stats pages in seconds. (Default is 10 seconds)
+
+`-appname`  
+    What appname to check for in the stats page. (default is stream)
 
 This Also means the nginx.conf in the repo is copied to `/srv/rtmp/nginx.conf`. Please move it whereever you want and adjust the docker command accordingly.
 

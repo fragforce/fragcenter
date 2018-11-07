@@ -42,7 +42,7 @@ func main() {
 	streamPort := envOrFlagStr("STREAMPORT", "port", "8080", "Port the rtmp server is outputting http traffic")
 	webPort := envOrFlagStr("WEBPORT", "web", "3000", "Port the webserver runs on.")
 	pollIntervalStr := envOrFlagStr("POLL", "poll", "10", "Polling interval")
-	appName := envOrFlagStr("APPNAME", "appname", "live", "Stream application name")
+	appName := envOrFlagStr("APPNAME", "appname", "stream", "Stream application name")
 	flag.Parse()
 
 	pollInterval, err := strconv.Atoi(*pollIntervalStr)
