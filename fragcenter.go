@@ -7,12 +7,19 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type stream struct {
+	name   string
+	url    *url.URL
+	mpdURL *url.URL
+}
 
 //LiveStreams is the datastructure of the stats xml page
 type LiveStreams struct {
@@ -43,6 +50,8 @@ func main() {
 	webPort := envOrFlagStr("WEBPORT", "web", "3000", "Port the webserver runs on.")
 	pollIntervalStr := envOrFlagStr("POLL", "poll", "10", "Polling interval")
 	appName := envOrFlagStr("APPNAME", "appname", "stream", "Stream application name")
+	streamPullKey := envOrFlagStr("STREAMPULLKEY", "pullKey", "bogus", "Stream key to use for auth'ing stream pulls")
+
 	flag.Parse()
 
 	pollInterval, err := strconv.Atoi(*pollIntervalStr)
@@ -57,7 +66,7 @@ func main() {
 	fmt.Printf("Monitoring RTMP host %s:%s for live streams.\n", *streamHost, *streamPort)
 
 	fmt.Printf("Starting stats checker, polling every %d seconds for streams named '%s'.\n", pollInterval, *appName)
-	go statsCheck(*streamHost, *intStreamHost, *streamPort, pollInterval, *appName)
+	go statsCheck(*streamHost, *intStreamHost, *streamPort, pollInterval, *appName, *streamPullKey)
 
 	fmt.Printf("Fragcenter is now running on port %s. Hit 'ctrl + c' to stop.\n", *webPort)
 	http.Handle("/", http.FileServer(http.Dir("./public")))
@@ -74,7 +83,21 @@ func marshalLiveStream(body []byte) (*LiveStreams, error) {
 	return &streams, nil
 }
 
-func statsCheck(host, intHost, port string, pollInterval int, appName string) {
+func makeStreamURL(host string, port string, appName string, streamPullKey string, name string) *url.URL {
+	u := url.URL{
+		Scheme: "rtmp",
+		Host:   host + ":" + port,
+		Path:   fmt.Sprintf("%s/%s", appName, name),
+	}
+
+	q := u.Query()
+	q.Set("key", streamPullKey)
+	u.RawQuery = q.Encode()
+
+	return &u
+}
+
+func statsCheck(host, intHost, port string, pollInterval int, appName string, streamPullKey string) {
 	url := fmt.Sprintf("http://%s:%s/stats", intHost, port)
 	for {
 		fmt.Println("Checking Stats...")
@@ -103,13 +126,26 @@ func statsCheck(host, intHost, port string, pollInterval int, appName string) {
 						continue
 					}
 					active = append(active, stream.Name)
-					fmt.Printf("Found live stream '%s'.\n", stream.Name)
+					fmt.Printf("Found live stream '%s'\n", stream.Name)
 				}
 			}
 		}
 
 		sort.Strings(active)
-		writeHTML(active, host, port)
+
+		streams := make([]stream, 0)
+
+		for _, name := range active {
+			r := stream{
+				name: name,
+				url:  makeStreamURL(host, port, appName, streamPullKey, name),
+			}
+			streams = append(streams, r)
+		}
+
+		if err := writeHTML(streams, host, port); err != nil {
+			fmt.Printf("Problem running write html: %s\n", err)
+		}
 
 		time.Sleep(time.Duration(pollInterval) * time.Second)
 	}
@@ -131,7 +167,7 @@ func fileCheck() {
 	}
 }
 
-func writeHTML(streams []string, host string, port string) error {
+func writeHTML(streams []stream, host string, port string) error {
 
 	var bodyLines []string
 
@@ -190,14 +226,14 @@ func writeHTML(streams []string, host string, port string) error {
 </html>`
 
 	baseVideo := `  <div id="container">
-    <a href="rtmp://<streamHost>/stream/<streamName>"><video data-dashjs-player autoplay muted src="http://<streamHost>:<streamPort>/dash/<streamName>/index.mpd"></video></a>
+    <a href="<streamURL>"><video data-dashjs-player autoplay muted src="http://<streamHost>:<streamPort>/dash/<streamName>/index.mpd"></video></a>
     <br/>
     <q><streamName></q>
   </div>`
 
-	for count, name := range streams {
+	for count, s := range streams {
 		if count < 3 {
-			bodyLines = append(bodyLines, strings.Replace(strings.Replace(strings.Replace(baseVideo, "<streamName>", name, -1), "<streamHost>", host, -1), "<streamPort>", port, -1))
+			bodyLines = append(bodyLines, strings.Replace(strings.Replace(strings.Replace(strings.Replace(baseVideo, "<streamName>", s.name, -1), "<streamHost>", host, -1), "<streamPort>", port, -1), "<streamURL>", s.url.String(), -1))
 		}
 	}
 
