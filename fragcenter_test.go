@@ -6,13 +6,15 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/fragforce/fragcenter/internal/stream_checker"
 )
 
 // TestParsing ensures that all of the example payloads provided parse into the struct we defined
 func TestParsing(t *testing.T) {
-	files, err := filepath.Glob("resources/test_stats_payloads/*xml")
+	files, err := filepath.Glob("assets/resources/test_stats_payloads/*xml")
 	if err != nil {
-		t.Errorf("No XML files found in resources/test_stats_payloads.")
+		t.Errorf("No XML files found in assets/resources/test_stats_payloads.")
 		t.FailNow()
 	}
 
@@ -29,7 +31,7 @@ func TestParsing(t *testing.T) {
 			continue
 		}
 
-		var streams LiveStreams
+		var streams stream_checker.LiveStreams
 		err = xml.Unmarshal(xmlBytes, &streams)
 		if err != nil {
 			t.Errorf("Couldn't unmarshal the XML in file '%s'.", fileName)

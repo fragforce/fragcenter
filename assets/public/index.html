@@ -1,0 +1,53 @@
+<html>
+<head>
+  <title>Fragcenter</title>
+  <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script type="text/javascript">
+    function getPage(){
+      var result;
+      $.ajax({
+        url: 'index.html',
+        type: 'get',
+        async: false,
+        success: function(data) {
+          result = data;
+        }
+      });
+      return result;
+    }
+
+    current = getPage();
+
+    function checkChanges(){
+      check = getPage();
+      if ( check != current) {
+        location.reload();
+      };
+    }
+    setInterval(checkChanges, 10000);
+  </script>
+  <style>
+	video {
+	width: 100%;
+	padding-left: 1%;
+	padding-right: 1%;
+	}
+	#container {
+	width: 30%;
+	padding-left: 1%;
+	padding-right: 1%;
+	float: left;
+	}
+  </style>
+</head>
+<body style="background-color:slategray;">
+<div align="center">
+  <div id="container">
+    <a href="rtmp://127.0.0.1/stream/thisIsOnlyATest"><video data-dashjs-player autoplay muted src="http://127.0.0.1:8080/dash/thisIsOnlyATest/index.mpd"></video></a>
+    <br/>
+    <q>thisIsOnlyATest</q>
+  </div>
+</div>
+</body>
+</html>
