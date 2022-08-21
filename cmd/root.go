@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/fragforce/fragcenter/lib/logs"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -13,16 +14,8 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "fragcenter",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Short: "TODO: Fill this in",
+	Long:  `TODO: Fill this in`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -70,4 +63,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
+
+	// Setup logging
+	logs.InitLogging(rootCmd)
 }
