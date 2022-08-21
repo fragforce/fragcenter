@@ -37,6 +37,7 @@ func InitLogging(rootCmd *cobra.Command) {
 	log = rootLog.WithFields(logrus.Fields{
 		"app":               rootCmd.Name(),
 		"log.level.current": lvl.String(),
+		"debug":             viper.GetBool("debug"),
 	})
 
 	for k, v := range viper.GetStringMapString("runtime") {
