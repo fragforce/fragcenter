@@ -47,3 +47,8 @@ func (c *BrainCell) Viper() *viper.Viper {
 func (c *BrainCell) ViperKeyFragment() string {
 	return c.name
 }
+
+// Name is just the name of the plugin/cell - Must be unique for all plugins
+func (c *BrainCell) Name() string {
+	return c.name
+}

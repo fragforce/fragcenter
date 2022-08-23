@@ -21,5 +21,6 @@ func NewMessageLogger(log *logrus.Entry) (plugin.Cell, error) {
 }
 
 func init() {
-
+	// Register the plugin creator so it gets created when system is ready for it
+	plugin.Register(NewMessageLogger)
 }
