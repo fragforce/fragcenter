@@ -3,39 +3,38 @@ package streams
 import (
 	"context"
 	"github.com/fragforce/fragcenter/lib/logs"
-	"github.com/fragforce/fragcenter/lib/msg"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
 )
 
-type IsTrackedFunc func(message msg.Message) bool
 type ClusterOption func(options *redis.ClusterOptions)
 
 type EventStream struct {
-	*logs.BLog
-	pool    *redis.ClusterClient
-	tracked map[string]IsTrackedFunc
+	logs.BLog
+	pool     *redis.ClusterClient
+	actReact []*ActionReaction
 }
 
-func NewEventStream(log *logrus.Entry, addrs []string, o ...ClusterOption) (*EventStream, error) {
+func NewEventStream(log *logrus.Entry, addrs []string, op ...ClusterOption) (*EventStream, error) {
 	opts := redis.ClusterOptions{
 		Addrs: addrs,
 	}
 
 	// Apply options
-	for _, fn := range o {
+	for _, fn := range op {
 		fn(&opts)
 	}
 
 	c := redis.NewClusterClient(&opts)
 	if err := c.Ping(context.Background()).Err(); err != nil {
-		panic("Unable to connect to redis " + err.Error())
+		log.WithError(err).Info("Couldn't ping Redis Cluster")
+		return nil, err
 	}
 
 	es := EventStream{
-		BLog:    logs.NewBLog(log),
-		pool:    nil,
-		tracked: make(map[string]IsTrackedFunc),
+		BLog:     *logs.NewBLog(log),
+		pool:     nil,
+		actReact: make([]*ActionReaction, 0),
 	}
 
 	return &es, nil

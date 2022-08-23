@@ -21,7 +21,7 @@ var brainCmd = &cobra.Command{
 		log = log.WithField("brain.obj", brain)
 
 		if err := brain.Start(); err != nil {
-			log.Panicln("Problem with running Brain")
+			log.WithError(err).Panicln("Problem with running Brain")
 		}
 
 		log.Info("All done!")
