@@ -43,6 +43,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	// TODO: Register signal handlers so that they send a shutdown event to ourselves - maybe only for daemons
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
