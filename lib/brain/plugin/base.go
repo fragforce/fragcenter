@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"github.com/fragforce/fragcenter/lib/logs"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -10,12 +9,11 @@ import (
 // BrainCell is the base for Brain Plugins
 type BrainCell struct {
 	logs.BLog
-	guid *uuid.UUID
 	name string
 }
 
 func NewBrainCell(log *logrus.Entry, name string) (*BrainCell, error) {
-	// FIXME: Make sure 'name' doesn't have anything but letters, numbers, and dashes in it
+	// TODO: Make sure 'name' doesn't have anything but letters, numbers, and dashes in it
 	// Plus is viper key part valid
 
 	b := BrainCell{
@@ -23,19 +21,14 @@ func NewBrainCell(log *logrus.Entry, name string) (*BrainCell, error) {
 		name: name,
 	}
 
-	return &b, nil
-}
-
-func (c *BrainCell) GUID() (uuid.UUID, error) {
-	if c.guid == nil {
-		guid, err := uuid.Parse(c.Viper().GetString("guid"))
-		if err != nil {
-			return guid, err
+	// TODO: Move out of closures to improve mem usage and overall perf
+	b.AddLogAugment("brain.cell.name", func(fname string) logrus.Fields {
+		return logrus.Fields{
+			fname: name,
 		}
-		c.guid = &guid
-	}
-	// Keep our guid safe from external, accidental modification
-	return *c.guid, nil
+	})
+
+	return &b, nil
 }
 
 // Viper sub to our config

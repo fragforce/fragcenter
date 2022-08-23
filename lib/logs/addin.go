@@ -1,16 +1,19 @@
 package logs
 
-import "github.com/sirupsen/logrus"
+import (
+	"github.com/sirupsen/logrus"
+)
 
-type logAugFunc func(string) logrus.Fields
+type LogAugFunc func(fname string) logrus.Fields
 
 type LAble interface {
 	L(log *logrus.Entry) *logrus.Entry
+	AddLogAugment(name string, fn LogAugFunc)
 }
 
 type BLog struct {
 	bLog   *logrus.Entry         // Log object - doesn't have our custom log stuff added - that's done via L()
-	logAug map[string]logAugFunc // Func to get anything to add to the loggers
+	logAug map[string]LogAugFunc // Func to get anything to add to the loggers
 }
 
 // NewBLog creates a new log helper
@@ -31,4 +34,9 @@ func (b BLog) L(log *logrus.Entry) *logrus.Entry {
 	}
 
 	return log
+}
+
+func (b BLog) AddLogAugment(name string, fn LogAugFunc) {
+	// TODO: Add log warning (at info level) when overwriting
+	b.logAug[name] = fn
 }
