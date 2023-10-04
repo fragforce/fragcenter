@@ -3,7 +3,7 @@ package streams
 import (
 	"context"
 	"github.com/fragforce/fragcenter/lib/logs"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 

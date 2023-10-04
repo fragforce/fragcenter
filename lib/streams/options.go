@@ -1,6 +1,6 @@
 package streams
 
-import "github.com/go-redis/redis/v8"
+import "github.com/redis/go-redis/v9"
 
 func ClusterOptUsername(username string) ClusterOption {
 	return func(options *redis.ClusterOptions) {
