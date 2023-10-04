@@ -24,3 +24,7 @@ func init() {
 	// Register the plugin creator so it gets created when system is ready for it
 	plugin.Register(NewMessageLogger)
 }
+
+func (l *MessageLogger) Run() error {
+	return nil
+}

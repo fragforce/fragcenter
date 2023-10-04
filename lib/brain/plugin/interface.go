@@ -13,4 +13,5 @@ type Cell interface {
 	ViperKeyFragment() string // The viper key fragment to use for config info
 	Viper() *viper.Viper      // Viper sub to our config
 	Name() string             // Cell name
+	Run() error               // Execute - Can block, return nil if not need // FIXME: Add channel so it knows when to quit
 }
