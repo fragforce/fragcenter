@@ -3,6 +3,7 @@ package plugins
 import (
 	"github.com/fragforce/fragcenter/lib/brain/plugin"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 // MessageLogger is a simple plugin to log all ingress messages
@@ -25,6 +26,10 @@ func init() {
 	plugin.Register(NewMessageLogger)
 }
 
-func (l *MessageLogger) Run() error {
+func (l *MessageLogger) Run(exitC chan os.Signal) error {
+	return nil
+}
+
+func (l *MessageLogger) CleanupIsDone() error {
 	return nil
 }

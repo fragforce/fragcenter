@@ -1,8 +1,11 @@
 package plugins
 
 import (
+	"context"
 	"github.com/fragforce/fragcenter/lib/brain/plugin"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,6 +14,7 @@ import (
 type Drinks struct {
 	*plugin.BrainCell
 	Gin *gin.Engine
+	Srv *http.Server
 }
 
 func NewDrinks(log *logrus.Entry) (plugin.Cell, error) {
@@ -18,10 +22,16 @@ func NewDrinks(log *logrus.Entry) (plugin.Cell, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Drinks{
+	d := Drinks{
 		BrainCell: bc,
 		Gin:       gin.Default(),
-	}, nil
+	}
+	d.Srv = &http.Server{
+		Addr:    d.Viper().GetString("listen"),
+		Handler: d.Gin,
+	}
+
+	return &d, nil
 }
 
 func init() {
@@ -29,6 +39,10 @@ func init() {
 	plugin.Register(NewDrinks)
 }
 
-func (d *Drinks) Run() error {
-	return d.Gin.Run(d.Viper().GetString("listen"))
+func (d *Drinks) Run(exitC chan os.Signal) error {
+	return d.Srv.ListenAndServe()
+}
+
+func (d *Drinks) CleanupIsDone() error {
+	return d.Srv.Shutdown(context.Background())
 }
