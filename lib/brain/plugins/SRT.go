@@ -8,7 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/voc/srtrelay/relay"
 	"github.com/voc/srtrelay/srt"
-	"os"
 )
 
 // SRT is a plugin to add a web api/ui
@@ -24,19 +23,28 @@ func NewSRT(log *logrus.Entry) (plugin.Cell, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	v := bc.Viper()
+	v.SetDefault("listen", "0.0.0.0:80")
+	v.SetDefault("public-addy", "") //FIXME: Set these
+	v.SetDefault("latency", "")
+	v.SetDefault("loss-max-ttl", "")
+	v.SetDefault("sync-clients", "")
+	v.SetDefault("relay-buff-size", "")
+
 	s := SRT{
 		BrainCell: bc,
 		config: &srt.Config{
 			Server: srt.ServerConfig{
-				Addresses:     bc.Viper().GetStringSlice("listen"),
-				PublicAddress: bc.Viper().GetString("public-addy"),
-				Latency:       bc.Viper().GetUint("latency"),
-				LossMaxTTL:    bc.Viper().GetUint("loss-max-ttl"),
-				SyncClients:   bc.Viper().GetBool("sync-clients"),
+				Addresses:     v.GetStringSlice("listen"),
+				PublicAddress: v.GetString("public-addy"),
+				Latency:       v.GetUint("latency"),
+				LossMaxTTL:    v.GetUint("loss-max-ttl"),
+				SyncClients:   v.GetBool("sync-clients"),
 				Auth:          auth.NewSRTAuth(bc),
 			},
 			Relay: relay.RelayConfig{
-				Buffersize: bc.Viper().GetUint("relay-buff-size"),
+				Buffersize: v.GetUint("relay-buff-size"),
 			},
 		},
 	}
@@ -52,30 +60,10 @@ func init() {
 	plugin.Register(NewSRT)
 }
 
-func (s *SRT) Run(exitC chan os.Signal) error {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s *SRT) Run(ctx context.Context) error {
 	s.ctx = ctx
-	s.waitForExit(exitC, cancel)
 	if err := s.Srv.Listen(ctx); err != nil {
 		return err
 	}
 	return nil
-}
-
-func (s *SRT) CleanupIsDone() error {
-	// FIXME: Fix this
-	return nil
-}
-
-func (s *SRT) waitForExit(exitC chan os.Signal, cancelFunc context.CancelFunc) {
-	go func(exitC chan os.Signal, cancelFunc context.CancelFunc) {
-		for {
-			select {
-			case <-s.ctx.Done():
-				return
-			case <-exitC:
-				cancelFunc()
-			}
-		}
-	}(exitC, cancelFunc)
 }

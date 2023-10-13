@@ -28,6 +28,7 @@ func Execute() {
 }
 
 func init() {
+	viper.SetDefault("log.level", "info")
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.

@@ -22,12 +22,16 @@ func NewDrinks(log *logrus.Entry) (plugin.Cell, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	v := bc.Viper()
+	v.SetDefault("listen", "0.0.0.0:80")
+
 	d := Drinks{
 		BrainCell: bc,
 		Gin:       gin.Default(),
 	}
 	d.Srv = &http.Server{
-		Addr:    d.Viper().GetString("listen"),
+		Addr:    v.GetString("listen"),
 		Handler: d.Gin,
 	}
 

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"github.com/fragforce/fragcenter/lib/brain/plugin"
 	"os"
 	"os/signal"
@@ -11,34 +12,35 @@ func (b Brain) Start() error {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	exits := make(map[string]chan os.Signal, len(b.cells))
+	ctx, cancelFunc := context.WithCancel(context.Background())
 
 	for uid, cell := range b.cells {
 		go func(uid string, cell plugin.Cell) {
 			l := cell.L(nil).WithField("uid", uid)
-			exits[uid] = make(chan os.Signal, 1)
 
-			if err := cell.Run(exits[uid]); err != nil {
+			if err := cell.Run(
+				context.WithValue(
+					context.WithValue(
+						ctx,
+						"name",
+						cell.Name(),
+					),
+					"uid",
+					uid,
+				),
+			); err != nil {
 				l.WithError(err).Error("Failed running cell")
 			}
 		}(uid.String(), cell)
 	}
 
 	for {
-		for sig := range c {
-			l := b.L(nil).WithField("signal", sig)
-			l.Warn("Received signal to exit")
-
-			// Send cleanup notes
-			for uid, ch := range exits {
-				l := l.WithField("uid", uid)
-				l.Debug("Sending exit signal to brain cell")
-				go func(ch chan os.Signal) {
-					ch <- sig
-				}(ch)
-			}
-			l.Info("Exiting...")
+		select {
+		case <-ctx.Done():
+			cancelFunc()
 			return nil
+		case <-c:
+			cancelFunc()
 		}
 	}
 }

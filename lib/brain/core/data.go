@@ -30,3 +30,8 @@ func NewBrain(log *logrus.Entry) (*Brain, error) {
 		stream: stream,
 	}, nil
 }
+
+func init() {
+	viper.SetDefault("redis.addrs", "127.0.0.1")
+	viper.SetDefault("redis.password", "")
+}
