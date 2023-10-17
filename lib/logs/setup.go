@@ -12,6 +12,11 @@ var (
 	baseLog *logrus.Entry
 )
 
+func init() {
+	viper.SetDefault("log.level", "info")
+	viper.SetDefault("debug", false)
+}
+
 // InitLogging sets up logging - should only be called from the rootCmd's initConfig
 // Warning: Panics on error!
 func InitLogging(rootCmd *cobra.Command) {

@@ -25,12 +25,12 @@ func NewSRT(log *logrus.Entry) (plugin.Cell, error) {
 	}
 
 	v := bc.Viper()
-	v.SetDefault("listen", "0.0.0.0:80")
-	v.SetDefault("public-addy", "") //FIXME: Set these
-	v.SetDefault("latency", "")
-	v.SetDefault("loss-max-ttl", "")
-	v.SetDefault("sync-clients", "")
-	v.SetDefault("relay-buff-size", "")
+	v.SetDefault("listen", "0.0.0.0:1935")
+	v.SetDefault("public-addy", "127.0.0.1") //FIXME: Set these
+	v.SetDefault("latency", "200")
+	v.SetDefault("loss-max-ttl", "0")
+	v.SetDefault("sync-clients", false)
+	v.SetDefault("relay-buff-size", "384000")
 
 	s := SRT{
 		BrainCell: bc,
@@ -47,6 +47,7 @@ func NewSRT(log *logrus.Entry) (plugin.Cell, error) {
 				Buffersize: v.GetUint("relay-buff-size"),
 			},
 		},
+		ctx: nil,
 	}
 
 	srtgo.InitSRT()

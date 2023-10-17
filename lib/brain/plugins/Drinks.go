@@ -3,11 +3,9 @@ package plugins
 import (
 	"context"
 	"github.com/fragforce/fragcenter/lib/brain/plugin"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"os"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Drinks is a plugin to add a web api/ui
@@ -43,7 +41,7 @@ func init() {
 	plugin.Register(NewDrinks)
 }
 
-func (d *Drinks) Run(exitC chan os.Signal) error {
+func (d *Drinks) Run(ctx context.Context) error {
 	return d.Srv.ListenAndServe()
 }
 

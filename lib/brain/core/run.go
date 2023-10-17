@@ -9,12 +9,16 @@ import (
 
 // Start begins execution
 func (b Brain) Start() error {
+	l := b.L(nil)
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
+	l.Debug("Starting cells")
 	for uid, cell := range b.cells {
+		l := l.WithField("cell", cell)
+		l.Trace("Starting cell")
 		go func(uid string, cell plugin.Cell) {
 			l := cell.L(nil).WithField("uid", uid)
 
@@ -35,12 +39,17 @@ func (b Brain) Start() error {
 	}
 
 	for {
+		l.Trace("In wait loop")
 		select {
 		case <-ctx.Done():
+			l.Trace("CTX is done")
 			cancelFunc()
+			l.Trace("Cancel done")
 			return nil
 		case <-c:
+			l.Trace("Calling cancel")
 			cancelFunc()
+			l.Trace("Cancel called")
 		}
 	}
 }

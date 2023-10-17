@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/fragforce/fragcenter/lib/brain/plugin"
+	_ "github.com/fragforce/fragcenter/lib/brain/plugins"
 	"github.com/fragforce/fragcenter/lib/logs"
 	"github.com/fragforce/fragcenter/lib/streams"
 	"github.com/google/uuid"
